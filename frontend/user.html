@@ -74,6 +74,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
     }
     .nav-title {
       font-size: 16px;
@@ -129,6 +130,10 @@
       background: none;
       outline: none;
       font-size: 14px;
+    }
+    .search-input input::placeholder {
+      color: var(--text-light);
+      opacity: 0.6;
     }
 
     .date-selector {
@@ -451,6 +456,10 @@
       padding: 8px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      outline: none;
+    }
+    .price-range input:focus {
+      border-color: var(--primary);
     }
 
     .detail-banner {
@@ -498,6 +507,7 @@
       display: flex;
       gap: 16px;
       margin-bottom: 16px;
+      flex-wrap: wrap;
     }
     .meta-item {
       display: flex;
@@ -574,6 +584,9 @@
       font-weight: 600;
       cursor: pointer;
     }
+    .book-btn:hover {
+      opacity: 0.9;
+    }
 
     .stay-banner {
       background: linear-gradient(135deg, var(--secondary), #2A2018);
@@ -582,6 +595,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      cursor: pointer;
     }
     .stay-dates {
       display: flex;
@@ -847,7 +861,7 @@ function CalendarModal({ onClose, onSelect, checkIn, checkOut }) {
 
 // ==================== 筛选抽屉 ====================
 function FilterDrawer({ onClose, onApply, filters }) {
-  const [localFilters, setLocalFilters] = useState(filters);
+  const [localFilters, setLocalFilters] = useState(filters || {});
 
   const starLevels = [5, 4, 3, 2, 1];
 
@@ -875,7 +889,7 @@ function FilterDrawer({ onClose, onApply, filters }) {
         </div>
         
         <div className="filter-section">
-          <div className="filter-section-title">价格范围</div>
+          <div className="filter-section-title">价格范围（元/晚）</div>
           <div className="price-range">
             <input 
               type="number" 
@@ -896,7 +910,14 @@ function FilterDrawer({ onClose, onApply, filters }) {
         <div style={{ padding: '16px', display: 'flex', gap: '8px' }}>
           <button 
             className="btn btn-secondary" 
-            style={{ flex: 1, padding: '10px', background: 'var(--border)', border: 'none', borderRadius: 'var(--radius)' }}
+            style={{ 
+              flex: 1, 
+              padding: '10px', 
+              background: 'var(--border)', 
+              border: 'none', 
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer'
+            }}
             onClick={() => {
               setLocalFilters({});
               onApply({});
@@ -977,6 +998,8 @@ function HomePage({ onNavigate }) {
   const [keyword, setKeyword] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [activeTags, setActiveTags] = useState([]);
+  const [showCityInput, setShowCityInput] = useState(false);
+  const [tempCity, setTempCity] = useState('');
 
   const quickTags = [
     { id: 'family', label: '👨‍👩‍👧 亲子' },
@@ -997,19 +1020,79 @@ function HomePage({ onNavigate }) {
     });
   };
 
-  // 获取当前位置
-  useEffect(() => {
-    // 简单模拟定位
-    setLocation('北京');
-  }, []);
+  const handleCityConfirm = () => {
+    if (tempCity.trim()) {
+      setLocation(tempCity);
+      setShowCityInput(false);
+    }
+  };
 
   return (
     <div className="page">
       <div className="search-section">
+        {/* 支持自由输入城市的地点栏 */}
         <div className="location-bar">
           <span className="location-icon">📍</span>
-          <span className="location-text">{location || '正在定位...'}</span>
-          <span className="location-change">切换城市</span>
+          {!showCityInput ? (
+            <>
+              <span className="location-text">{location || '请输入城市'}</span>
+              <span 
+                className="location-change" 
+                onClick={() => {
+                  setTempCity(location);
+                  setShowCityInput(true);
+                }}
+              >
+                {location ? '切换城市' : '选择城市'}
+              </span>
+            </>
+          ) : (
+            <div style={{ display: 'flex', flex: 1, gap: '8px' }}>
+              <input
+                type="text"
+                value={tempCity}
+                onChange={(e) => setTempCity(e.target.value)}
+                placeholder="输入城市名称"
+                style={{
+                  flex: 1,
+                  padding: '6px 12px',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  outline: 'none',
+                  fontSize: '14px'
+                }}
+                autoFocus
+                onKeyPress={(e) => e.key === 'Enter' && handleCityConfirm()}
+              />
+              <button
+                onClick={handleCityConfirm}
+                style={{
+                  background: 'var(--primary)',
+                  border: 'none',
+                  padding: '6px 16px',
+                  borderRadius: 'var(--radius)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                确认
+              </button>
+              <button
+                onClick={() => setShowCityInput(false)}
+                style={{
+                  background: 'var(--border)',
+                  border: 'none',
+                  padding: '6px 16px',
+                  borderRadius: 'var(--radius)',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="search-input">
@@ -1058,7 +1141,7 @@ function HomePage({ onNavigate }) {
       </div>
 
       {/* 推荐广告 */}
-      <div style={{ marginTop: '16px' }} onClick={() => handleSearch()}>
+      <div style={{ marginTop: '16px' }} onClick={handleSearch}>
         <div style={{ 
           background: 'linear-gradient(135deg, var(--secondary), #2A2018)', 
           borderRadius: 'var(--radius-lg)',
@@ -1219,7 +1302,7 @@ function ListPage({ onNavigate, searchParams }) {
     <div>
       <div className="nav-bar">
         <a href="#" className="nav-back" onClick={(e) => { e.preventDefault(); onNavigate('home'); }}>←</a>
-        <div className="nav-title">{searchParams?.location || '北京'} · {filteredHotels.length}家酒店</div>
+        <div className="nav-title">{searchParams?.location || '全国'} · {filteredHotels.length}家酒店</div>
         <div className="nav-right"></div>
       </div>
 
