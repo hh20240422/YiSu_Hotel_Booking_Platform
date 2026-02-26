@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>易宿 · 酒店预订</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #C9A84C;
+      --primary-dark: #8B6914;
+      --primary-light: #E8C97A;
+      --secondary: #1A1510;
+      --text: #2C2824;
+      --text-light: #6B5E4E;
+      --bg: #F8F5F0;
+      --card: #FFFFFF;
+      --border: #E8DFC8;
+      --border-dark: #C8B890;
+      --shadow: 0 2px 8px rgba(26,21,16,0.08);
+      --shadow-lg: 0 8px 24px rgba(26,21,16,0.12);
+      --radius: 8px;
+      --radius-lg: 16px;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--bg);
+      min-height: 100vh;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    .page {
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-back {
+      font-size: 20px;
+      color: var(--text);
+      text-decoration: none;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+    .nav-right {
+      width: 32px;
+    }
+
+    .search-section {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .location-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .location-icon {
+      color: var(--primary);
+    }
+    .location-text {
+      font-weight: 600;
+      flex: 1;
+    }
+    .location-change {
+      color: var(--primary-dark);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    .search-input input {
+      flex: 1;
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .date-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .date-item {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .date-label {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-bottom: 2px;
+    }
+    .date-value {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .search-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .search-btn:active {
+      opacity: 0.9;
+      transform: scale(0.98);
+    }
+    .search-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .quick-tags {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .quick-tag {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      white-space: nowrap;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-tag.active {
+      background: var(--secondary);
+      border-color: var(--secondary);
+      color: var(--primary-light);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .filter-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .filter-item.active {
+      background: var(--secondary);
+      border-color: var(--secondary);
+      color: var(--primary-light);
+    }
+
+    .hotel-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .hotel-card:active {
+      transform: scale(0.98);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .hotel-image {
+      height: 160px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+    }
+    .hotel-tag {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      backdrop-filter: blur(4px);
+    }
+
+    .hotel-info {
+      padding: 16px;
+    }
+    .hotel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .hotel-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+    .hotel-stars {
+      color: var(--primary);
+      font-size: 12px;
+    }
+    .hotel-address {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .hotel-features {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .feature-tag {
+      background: var(--bg);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--text-light);
+    }
+    .hotel-price {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .price-current {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+    .price-unit {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-left: 2px;
+    }
+    .price-original {
+      font-size: 12px;
+      color: var(--text-light);
+      text-decoration: line-through;
+      margin-left: 4px;
+    }
+    .rating {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--primary-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--secondary);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .load-more {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-light);
+      font-size: 13px;
+    }
+
+    .calendar-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: flex-end;
+      z-index: 1000;
+    }
+    .calendar-sheet {
+      background: var(--card);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .calendar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      padding: 12px;
+      color: var(--text-light);
+      font-size: 12px;
+    }
+    .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      padding: 0 12px 12px;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .calendar-day.selected {
+      background: var(--primary);
+      color: white;
+    }
+    .calendar-day.in-range {
+      background: var(--primary-light);
+      color: var(--secondary);
+    }
+    .calendar-day.disabled {
+      color: var(--border);
+      cursor: not-allowed;
+    }
+
+    .filter-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+    }
+    .filter-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .filter-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .star-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .star-filter {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .star-filter.active {
+      background: var(--secondary);
+      color: var(--primary-light);
+      border-color: var(--secondary);
+    }
+    .price-range {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .price-range input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .detail-banner {
+      height: 240px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+    }
+    .banner-indicators {
+      position: absolute;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+    .indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+    }
+    .indicator.active {
+      background: white;
+      width: 20px;
+      border-radius: 3px;
+    }
+
+    .detail-section {
+      background: var(--card);
+      padding: 20px;
+      margin-bottom: 8px;
+    }
+    .detail-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .detail-subtitle {
+      color: var(--text-light);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .detail-meta {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-light);
+    }
+
+    .facilities-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .facility-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-light);
+    }
+
+    .room-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .room-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .room-name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .room-beds {
+      font-size: 12px;
+      color: var(--text-light);
+    }
+    .room-features {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--text-light);
+      flex-wrap: wrap;
+    }
+    .room-price {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .room-price-current {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+    .room-price-original {
+      font-size: 14px;
+      color: var(--text-light);
+      text-decoration: line-through;
+      margin-left: 8px;
+    }
+    .book-btn {
+      background: var(--secondary);
+      color: var(--primary-light);
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 20px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .stay-banner {
+      background: linear-gradient(135deg, var(--secondary), #2A2018);
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stay-dates {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stay-date-item {
+      text-align: center;
+    }
+    .stay-date-label {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+    .stay-date-value {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .stay-arrow {
+      opacity: 0.5;
+    }
+    .stay-change {
+      background: rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border-dark);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--secondary);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      z-index: 2000;
+      box-shadow: var(--shadow-lg);
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+      from { transform: translate(-50%, -100%); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react,env">
+const { useState, useEffect, useCallback } = React;
+
+// ==================== API配置 ====================
+const API_BASE = 'http://localhost:3001/api';
+
+// ==================== 工具函数 ====================
+function formatDate(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function getWeekDay(date) {
+  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return days[new Date(date).getDay()];
+}
+
+function getStarDisplay(count) {
+  return '★'.repeat(count) + '☆'.repeat(5 - count);
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2000);
+}
+
+// ==================== API调用 ====================
+async function fetchHotels(params = {}) {
+  try {
+    const queryString = new URLSearchParams(params).toString();
+    const response = await fetch(`${API_BASE}/c/hotels?${queryString}`);
+    if (!response.ok) throw new Error('获取酒店列表失败');
+    return await response.json();
+  } catch (error) {
+    console.error('fetchHotels error:', error);
+    showToast('网络错误，请稍后重试');
+    return [];
+  }
+}
+
+async function fetchHotelDetail(id) {
+  try {
+    const response = await fetch(`${API_BASE}/c/hotels/${id}`);
+    if (!response.ok) throw new Error('获取酒店详情失败');
+    return await response.json();
+  } catch (error) {
+    console.error('fetchHotelDetail error:', error);
+    showToast('网络错误，请稍后重试');
+    return null;
+  }
+}
+
+// ==================== 日历组件 ====================
+function CalendarModal({ onClose, onSelect, checkIn, checkOut }) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [tempCheckIn, setTempCheckIn] = useState(checkIn);
+  const [tempCheckOut, setTempCheckOut] = useState(checkOut);
+  const [selecting, setSelecting] = useState('checkin');
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const days = [];
+    
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      days.push(null);
+    }
+    
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+    
+    return days;
+  };
+
+  const handleDateClick = (date) => {
+    if (!date) return;
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    if (date < today) return;
+
+    if (selecting === 'checkin') {
+      setTempCheckIn(date);
+      setTempCheckOut(null);
+      setSelecting('checkout');
+    } else {
+      if (tempCheckIn && date > tempCheckIn) {
+        setTempCheckOut(date);
+      } else {
+        setTempCheckIn(date);
+        setTempCheckOut(null);
+      }
+    }
+  };
+
+  const isInRange = (date) => {
+    if (!tempCheckIn || !tempCheckOut || !date) return false;
+    return date > tempCheckIn && date < tempCheckOut;
+  };
+
+  const isSelected = (date) => {
+    if (!date) return false;
+    return (tempCheckIn && date.toDateString() === tempCheckIn.toDateString()) ||
+           (tempCheckOut && date.toDateString() === tempCheckOut.toDateString());
+  };
+
+  const handleConfirm = () => {
+    if (tempCheckIn && tempCheckOut) {
+      onSelect(tempCheckIn, tempCheckOut);
+    }
+  };
+
+  const days = getDaysInMonth(currentMonth);
+
+  return (
+    <div className="calendar-modal" onClick={onClose}>
+      <div className="calendar-sheet" onClick={e => e.stopPropagation()}>
+        <div className="calendar-header">
+          <span>选择入住日期</span>
+          <span onClick={onClose} style={{ cursor: 'pointer' }}>✕</span>
+        </div>
+        
+        <div style={{ padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>入住</div>
+              <div style={{ fontWeight: '600' }}>{tempCheckIn ? formatDate(tempCheckIn) : '请选择'}</div>
+            </div>
+            <div>→</div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>离店</div>
+              <div style={{ fontWeight: '600' }}>{tempCheckOut ? formatDate(tempCheckOut) : '请选择'}</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>←</button>
+            <span>{currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月</span>
+            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>→</button>
+          </div>
+          
+          <div className="calendar-weekdays">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          
+          <div className="calendar-days">
+            {days.map((date, i) => (
+              <div
+                key={i}
+                className={`calendar-day ${
+                  isSelected(date) ? 'selected' : ''
+                } ${isInRange(date) ? 'in-range' : ''} ${
+                  date && date < new Date() ? 'disabled' : ''
+                }`}
+                onClick={() => handleDateClick(date)}
+              >
+                {date ? date.getDate() : ''}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div style={{ padding: '16px' }}>
+          <button 
+            className="search-btn"
+            onClick={handleConfirm}
+            disabled={!tempCheckIn || !tempCheckOut}
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 筛选抽屉 ====================
+function FilterDrawer({ onClose, onApply, filters }) {
+  const [localFilters, setLocalFilters] = useState(filters);
+
+  const starLevels = [5, 4, 3, 2, 1];
+
+  return (
+    <div className="filter-drawer" onClick={onClose}>
+      <div className="filter-content" onClick={e => e.stopPropagation()}>
+        <div className="calendar-header">
+          <span>筛选</span>
+          <span onClick={onClose} style={{ cursor: 'pointer' }}>✕</span>
+        </div>
+        
+        <div className="filter-section">
+          <div className="filter-section-title">星级</div>
+          <div className="star-filters">
+            {starLevels.map(level => (
+              <div
+                key={level}
+                className={`star-filter ${localFilters.star === level ? 'active' : ''}`}
+                onClick={() => setLocalFilters({ ...localFilters, star: level })}
+              >
+                {level}星
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="filter-section">
+          <div className="filter-section-title">价格范围</div>
+          <div className="price-range">
+            <input 
+              type="number" 
+              placeholder="最低价" 
+              value={localFilters.minPrice || ''}
+              onChange={e => setLocalFilters({ ...localFilters, minPrice: e.target.value })}
+            />
+            <span>-</span>
+            <input 
+              type="number" 
+              placeholder="最高价"
+              value={localFilters.maxPrice || ''}
+              onChange={e => setLocalFilters({ ...localFilters, maxPrice: e.target.value })}
+            />
+          </div>
+        </div>
+        
+        <div style={{ padding: '16px', display: 'flex', gap: '8px' }}>
+          <button 
+            className="btn btn-secondary" 
+            style={{ flex: 1, padding: '10px', background: 'var(--border)', border: 'none', borderRadius: 'var(--radius)' }}
+            onClick={() => {
+              setLocalFilters({});
+              onApply({});
+            }}
+          >
+            重置
+          </button>
+          <button 
+            className="search-btn" 
+            style={{ flex: 2 }}
+            onClick={() => onApply(localFilters)}
+          >
+            应用筛选
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 酒店卡片 ====================
+function HotelCard({ hotel, onClick }) {
+  if (!hotel.room_types || hotel.room_types.length === 0) return null;
+  
+  const minPrice = Math.min(...hotel.room_types.map(r => r.discount_price || r.price));
+  const originalPrice = Math.min(...hotel.room_types.map(r => r.price));
+  const facilities = hotel.facilities ? hotel.facilities.split(',').map(f => f.trim()) : [];
+  
+  return (
+    <div className="hotel-card" onClick={onClick}>
+      <div className="hotel-image">
+        <div className="hotel-tag">{hotel.review_count || 0}条评价</div>
+      </div>
+      <div className="hotel-info">
+        <div className="hotel-header">
+          <div className="hotel-name">{hotel.name_cn}</div>
+          <div className="hotel-stars">{getStarDisplay(hotel.star_level)}</div>
+        </div>
+        <div className="hotel-address">📍 {hotel.address}</div>
+        {facilities.length > 0 && (
+          <div className="hotel-features">
+            {facilities.slice(0, 3).map((f, i) => (
+              <span key={i} className="feature-tag">{f}</span>
+            ))}
+          </div>
+        )}
+        <div className="hotel-price">
+          <div>
+            <span className="price-current">¥{minPrice}</span>
+            <span className="price-unit">/晚起</span>
+            {originalPrice > minPrice && (
+              <span className="price-original">¥{originalPrice}</span>
+            )}
+          </div>
+          <div className="rating">
+            <span>★</span>
+            <span>{hotel.rating || '4.5'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 首页 ====================
+function HomePage({ onNavigate }) {
+  const [checkIn, setCheckIn] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
+  });
+  const [checkOut, setCheckOut] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return d;
+  });
+  const [location, setLocation] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [activeTags, setActiveTags] = useState([]);
+
+  const quickTags = [
+    { id: 'family', label: '👨‍👩‍👧 亲子' },
+    { id: 'luxury', label: '🌟 豪华' },
+    { id: 'parking', label: '🅿️ 免费停车场' },
+    { id: 'pool', label: '🏊 泳池' },
+    { id: 'fitness', label: '💪 健身中心' },
+    { id: 'breakfast', label: '🍳 含早餐' }
+  ];
+
+  const handleSearch = () => {
+    onNavigate('list', {
+      location,
+      checkIn,
+      checkOut,
+      keyword,
+      tags: activeTags
+    });
+  };
+
+  // 获取当前位置
+  useEffect(() => {
+    // 简单模拟定位
+    setLocation('北京');
+  }, []);
+
+  return (
+    <div className="page">
+      <div className="search-section">
+        <div className="location-bar">
+          <span className="location-icon">📍</span>
+          <span className="location-text">{location || '正在定位...'}</span>
+          <span className="location-change">切换城市</span>
+        </div>
+        
+        <div className="search-input">
+          <span>🔍</span>
+          <input 
+            type="text" 
+            placeholder="搜索酒店、目的地" 
+            value={keyword}
+            onChange={e => setKeyword(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleSearch()}
+          />
+        </div>
+        
+        <div className="date-selector" onClick={() => setShowCalendar(true)}>
+          <div className="date-item">
+            <div className="date-label">入住</div>
+            <div className="date-value">{formatDate(checkIn)} {getWeekDay(checkIn)}</div>
+          </div>
+          <div className="date-item">
+            <div className="date-label">离店</div>
+            <div className="date-value">{formatDate(checkOut)} {getWeekDay(checkOut)}</div>
+          </div>
+        </div>
+        
+        <div className="quick-tags">
+          {quickTags.map(tag => (
+            <div
+              key={tag.id}
+              className={`quick-tag ${activeTags.includes(tag.id) ? 'active' : ''}`}
+              onClick={() => {
+                if (activeTags.includes(tag.id)) {
+                  setActiveTags(activeTags.filter(t => t !== tag.id));
+                } else {
+                  setActiveTags([...activeTags, tag.id]);
+                }
+              }}
+            >
+              {tag.label}
+            </div>
+          ))}
+        </div>
+        
+        <button className="search-btn" onClick={handleSearch}>
+          查询酒店
+        </button>
+      </div>
+
+      {/* 推荐广告 */}
+      <div style={{ marginTop: '16px' }} onClick={() => handleSearch()}>
+        <div style={{ 
+          background: 'linear-gradient(135deg, var(--secondary), #2A2018)', 
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px',
+          color: 'white',
+          cursor: 'pointer'
+        }}>
+          <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>暑期特惠</div>
+          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '12px' }}>精选酒店7折起</div>
+          <button style={{ 
+            background: 'var(--primary)', 
+            border: 'none', 
+            padding: '8px 16px', 
+            borderRadius: '20px',
+            color: 'var(--secondary)',
+            fontWeight: 600,
+            fontSize: '13px',
+            cursor: 'pointer'
+          }}>立即预订</button>
+        </div>
+      </div>
+
+      {showCalendar && (
+        <CalendarModal
+          checkIn={checkIn}
+          checkOut={checkOut}
+          onClose={() => setShowCalendar(false)}
+          onSelect={(inDate, outDate) => {
+            setCheckIn(inDate);
+            setCheckOut(outDate);
+            setShowCalendar(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==================== 列表页 ====================
+function ListPage({ onNavigate, searchParams }) {
+  const [hotels, setHotels] = useState([]);
+  const [filteredHotels, setFilteredHotels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [sortBy, setSortBy] = useState('recommend');
+
+  // 加载酒店数据
+  useEffect(() => {
+    const loadHotels = async () => {
+      setLoading(true);
+      const params = {};
+      if (searchParams?.location) params.location = searchParams.location;
+      if (searchParams?.keyword) params.keyword = searchParams.keyword;
+      
+      const data = await fetchHotels(params);
+      setHotels(data);
+      setFilteredHotels(data);
+      setLoading(false);
+    };
+    loadHotels();
+  }, [searchParams]);
+
+  // 筛选和排序逻辑
+  useEffect(() => {
+    let result = [...hotels];
+    
+    if (filters.star) {
+      result = result.filter(h => h.star_level === filters.star);
+    }
+    
+    if (filters.minPrice) {
+      result = result.filter(h => {
+        const minPrice = Math.min(...h.room_types.map(r => r.discount_price || r.price));
+        return minPrice >= Number(filters.minPrice);
+      });
+    }
+    
+    if (filters.maxPrice) {
+      result = result.filter(h => {
+        const minPrice = Math.min(...h.room_types.map(r => r.discount_price || r.price));
+        return minPrice <= Number(filters.maxPrice);
+      });
+    }
+    
+    switch(sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => {
+          const priceA = Math.min(...a.room_types.map(r => r.discount_price || r.price));
+          const priceB = Math.min(...b.room_types.map(r => r.discount_price || r.price));
+          return priceA - priceB;
+        });
+        break;
+      case 'price-desc':
+        result.sort((a, b) => {
+          const priceA = Math.min(...a.room_types.map(r => r.discount_price || r.price));
+          const priceB = Math.min(...b.room_types.map(r => r.discount_price || r.price));
+          return priceB - priceA;
+        });
+        break;
+      case 'rating':
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      default:
+        break;
+    }
+    
+    setFilteredHotels(result);
+  }, [hotels, filters, sortBy]);
+
+  // 加载更多
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setTimeout(() => {
+      setPage(prev => prev + 1);
+      setLoadingMore(false);
+      if (page >= 3) setHasMore(false);
+    }, 1000);
+  }, [loadingMore, hasMore, page]);
+
+  // 滚动监听
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        loadMore();
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore]);
+
+  if (loading) {
+    return (
+      <div>
+        <div className="nav-bar">
+          <a href="#" className="nav-back" onClick={(e) => { e.preventDefault(); onNavigate('home'); }}>←</a>
+          <div className="nav-title">加载中...</div>
+          <div className="nav-right"></div>
+        </div>
+        <div className="loading">
+          <div className="spinner"></div>
+          <div style={{ marginTop: '16px' }}>正在获取酒店信息...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="nav-bar">
+        <a href="#" className="nav-back" onClick={(e) => { e.preventDefault(); onNavigate('home'); }}>←</a>
+        <div className="nav-title">{searchParams?.location || '北京'} · {filteredHotels.length}家酒店</div>
+        <div className="nav-right"></div>
+      </div>
+
+      <div style={{ padding: '12px 16px' }}>
+        <div style={{ 
+          background: 'var(--card)', 
+          borderRadius: 'var(--radius)',
+          padding: '12px',
+          marginBottom: '12px',
+          border: '1px solid var(--border)'
+        }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>入住</div>
+              <div style={{ fontWeight: 600, fontSize: '13px' }}>
+                {searchParams?.checkIn ? formatDate(searchParams.checkIn) : formatDate(new Date())}
+              </div>
+            </div>
+            <div style={{ color: 'var(--text-light)' }}>→</div>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>离店</div>
+              <div style={{ fontWeight: 600, fontSize: '13px' }}>
+                {searchParams?.checkOut ? formatDate(searchParams.checkOut) : formatDate(new Date(Date.now() + 86400000))}
+              </div>
+            </div>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>间数</div>
+              <div style={{ fontWeight: 600, fontSize: '13px' }}>1间</div>
+            </div>
+          </div>
+          {searchParams?.keyword && (
+            <div style={{ 
+              background: 'var(--bg)', 
+              borderRadius: '20px',
+              padding: '6px 12px',
+              fontSize: '13px',
+              color: 'var(--text-light)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <span>🔍</span>
+              <span>{searchParams.keyword}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="filter-bar">
+          <div 
+            className="filter-item" 
+            onClick={() => setShowFilters(true)}
+          >
+            <span>📊</span> 筛选
+            {Object.keys(filters).length > 0 && (
+              <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {Object.keys(filters).length}
+              </span>
+            )}
+          </div>
+          <div 
+            className={`filter-item ${sortBy === 'recommend' ? 'active' : ''}`}
+            onClick={() => setSortBy('recommend')}
+          >
+            推荐
+          </div>
+          <div 
+            className={`filter-item ${sortBy === 'price-asc' ? 'active' : ''}`}
+            onClick={() => setSortBy('price-asc')}
+          >
+            价格最低
+          </div>
+          <div 
+            className={`filter-item ${sortBy === 'price-desc' ? 'active' : ''}`}
+            onClick={() => setSortBy('price-desc')}
+          >
+            价格最高
+          </div>
+          <div 
+            className={`filter-item ${sortBy === 'rating' ? 'active' : ''}`}
+            onClick={() => setSortBy('rating')}
+          >
+            评分最高
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 16px' }}>
+        {filteredHotels.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">🏨</div>
+            <div className="empty-state-text">暂无符合条件的酒店</div>
+            <button 
+              className="search-btn" 
+              style={{ marginTop: '20px', width: '200px' }}
+              onClick={() => {
+                setFilters({});
+                setSortBy('recommend');
+              }}
+            >
+              清除筛选
+            </button>
+          </div>
+        ) : (
+          <>
+            {filteredHotels.map(hotel => (
+              <HotelCard 
+                key={hotel.id} 
+                hotel={hotel} 
+                onClick={() => onNavigate('detail', { hotelId: hotel.id })}
+              />
+            ))}
+            
+            {loadingMore && (
+              <div className="load-more">
+                <div className="spinner"></div> 加载中...
+              </div>
+            )}
+            
+            {!hasMore && filteredHotels.length > 0 && (
+              <div className="load-more">
+                — 没有更多了 —
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {showFilters && (
+        <FilterDrawer
+          filters={filters}
+          onClose={() => setShowFilters(false)}
+          onApply={(newFilters) => {
+            setFilters(newFilters);
+            setShowFilters(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==================== 详情页 ====================
+function DetailPage({ onNavigate, hotelId }) {
+  const [hotel, setHotel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentImage, setCurrentImage] = useState(0);
+  const [checkIn, setCheckIn] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
+  });
+  const [checkOut, setCheckOut] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return d;
+  });
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  useEffect(() => {
+    const loadHotel = async () => {
+      setLoading(true);
+      const data = await fetchHotelDetail(hotelId);
+      setHotel(data);
+      setLoading(false);
+    };
+    loadHotel();
+  }, [hotelId]);
+
+  if (loading) {
+    return (
+      <div>
+        <div className="nav-bar">
+          <a href="#" className="nav-back" onClick={(e) => { e.preventDefault(); onNavigate('list'); }}>←</a>
+          <div className="nav-title">加载中...</div>
+          <div className="nav-right"></div>
+        </div>
+        <div className="loading">
+          <div className="spinner"></div>
+          <div style={{ marginTop: '16px' }}>正在加载酒店详情...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hotel) {
+    return (
+      <div>
+        <div className="nav-bar">
+          <a href="#" className="nav-back" onClick={(e) => { e.preventDefault(); onNavigate('list'); }}>←</a>
+          <div className="nav-title">酒店不存在</div>
+          <div className="nav-right"></div>
+        </div>
+        <div className="empty-state">
+          <div className="empty-state-icon">😢</div>
+          <div className="empty-state-text">酒店不存在或已下架</div>
+        </div>
+      </div>
+    );
+  }
+
+  const facilities = hotel.facilities ? hotel.facilities.split(',').map(f => f.trim()) : [];
+  const images = hotel.images || ['https://images.unsplash.com/photo-1551882547-ff40c63fe5fa'];
+
+  return (
+    <div>
+      <div className="nav-bar">
+        <a href="#" className="nav-back" onClick={(e) => { e.preventDefault(); onNavigate('list'); }}>←</a>
+        <div className="nav-title">{hotel.name_cn}</div>
+        <div className="nav-right"></div>
+      </div>
+
+      <div className="detail-banner">
+        <div className="banner-indicators">
+          {images.map((_, i) => (
+            <div key={i} className={`indicator ${i === currentImage ? 'active' : ''}`} />
+          ))}
+        </div>
+      </div>
+
+      <div className="detail-section">
+        <div className="detail-title">{hotel.name_cn}</div>
+        {hotel.name_en && <div className="detail-subtitle">{hotel.name_en}</div>}
+        
+        <div className="detail-meta">
+          <div className="meta-item">⭐ {hotel.star_level}星级</div>
+          <div className="meta-item">📊 {hotel.rating || '4.5'}分 · {hotel.review_count || 0}条评价</div>
+        </div>
+        
+        <div className="meta-item">📍 {hotel.address}</div>
+        {hotel.phone && <div className="meta-item">📞 {hotel.phone}</div>}
+      </div>
+
+      {hotel.description && (
+        <div className="detail-section">
+          <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>酒店简介</div>
+          <div style={{ color: 'var(--text-light)', fontSize: '14px' }}>{hotel.description}</div>
+        </div>
+      )}
+
+      {facilities.length > 0 && (
+        <div className="detail-section">
+          <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>酒店设施</div>
+          <div className="facilities-grid">
+            {facilities.map((f, i) => (
+              <div key={i} className="facility-item">
+                <span>✓</span> {f}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hotel.nearby_attractions && (
+        <div className="detail-section">
+          <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>周边信息</div>
+          <div className="facility-item">{hotel.nearby_attractions}</div>
+        </div>
+      )}
+
+      <div className="stay-banner" onClick={() => setShowCalendar(true)}>
+        <div className="stay-dates">
+          <div className="stay-date-item">
+            <div className="stay-date-label">入住</div>
+            <div className="stay-date-value">{formatDate(checkIn)}</div>
+          </div>
+          <span className="stay-arrow">→</span>
+          <div className="stay-date-item">
+            <div className="stay-date-label">离店</div>
+            <div className="stay-date-value">{formatDate(checkOut)}</div>
+          </div>
+        </div>
+        <div className="stay-change">修改</div>
+      </div>
+
+      <div className="detail-section">
+        <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>房型价格</div>
+        
+        {hotel.room_types && hotel.room_types.length > 0 ? (
+          hotel.room_types.map(room => (
+            <div key={room.id} className="room-card">
+              <div className="room-header">
+                <div className="room-name">{room.name}</div>
+                <div>{room.bed_type || '大床'} · {room.capacity || 2}人</div>
+              </div>
+              
+              <div className="room-features">
+                {room.area && <span>📏 {room.area}㎡</span>}
+                {room.facilities && room.facilities.split(',').slice(0, 3).map((f, i) => (
+                  <span key={i}>{f.trim()}</span>
+                ))}
+              </div>
+              
+              {room.discount_desc && (
+                <div style={{ 
+                  background: 'var(--primary-light)', 
+                  color: 'var(--secondary)',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  marginBottom: '12px',
+                  display: 'inline-block'
+                }}>
+                  {room.discount_desc}
+                </div>
+              )}
+              
+              <div className="room-price">
+                <div>
+                  <span className="room-price-current">¥{room.discount_price || room.price}</span>
+                  {room.discount_price && (
+                    <span className="room-price-original">¥{room.price}</span>
+                  )}
+                </div>
+                <button className="book-btn" onClick={() => showToast('预订功能开发中')}>预订</button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-light)' }}>
+            暂无房型信息
+          </div>
+        )}
+      </div>
+
+      {showCalendar && (
+        <CalendarModal
+          checkIn={checkIn}
+          checkOut={checkOut}
+          onClose={() => setShowCalendar(false)}
+          onSelect={(inDate, outDate) => {
+            setCheckIn(inDate);
+            setCheckOut(outDate);
+            setShowCalendar(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==================== 主应用 ====================
+function App() {
+  const [currentPage, setCurrentPage] = useState('home');
+  const [pageParams, setPageParams] = useState({});
+
+  const navigate = (page, params = {}) => {
+    setCurrentPage(page);
+    setPageParams(params);
+  };
+
+  return (
+    <div className="app">
+      {currentPage === 'home' && <HomePage onNavigate={navigate} />}
+      {currentPage === 'list' && (
+        <ListPage onNavigate={navigate} searchParams={pageParams} />
+      )}
+      {currentPage === 'detail' && (
+        <DetailPage onNavigate={navigate} hotelId={pageParams.hotelId} />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
