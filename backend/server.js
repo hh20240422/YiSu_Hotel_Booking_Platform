@@ -59,12 +59,16 @@ db.exec(`
   );
 `);
 
-// Seed admin account
+// Seed accounts.
+// Passwords are stored as bcrypt(sha256(plaintext)) because the frontend
+// sends sha256(plaintext) over the wire — never the raw password.
+// sha256("admin123")    = 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
+// sha256("merchant123") = 0e3183c45e8ef9bc95fc8a2dc83f040149d2c7193312aa0740da9c0d50b1f439
 const adminExists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
 if (!adminExists) {
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)').run('admin', hash, 'admin', '超级管理员');
-  const merchantHash = bcrypt.hashSync('merchant123', 10);
+  const adminHash    = bcrypt.hashSync('240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 10);
+  const merchantHash = bcrypt.hashSync('0e3183c45e8ef9bc95fc8a2dc83f040149d2c7193312aa0740da9c0d50b1f439', 10);
+  db.prepare('INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)').run('admin',     adminHash,    'admin',    '超级管理员');
   db.prepare('INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)').run('merchant1', merchantHash, 'merchant', '测试商户');
 }
 
@@ -88,14 +92,17 @@ function requireRole(role) {
 }
 
 // ─── Auth Routes ─────────────────────────────────────────────────────────────
+
+// Register: frontend sends sha256(password), we bcrypt it for storage.
 app.post('/api/register', (req, res) => {
   const { username, password, role, name } = req.body;
   if (!username || !password || !role) return res.status(400).json({ error: '参数不完整' });
   if (!['merchant', 'admin'].includes(role)) return res.status(400).json({ error: '无效角色' });
+  // Validate that incoming password looks like a SHA-256 hex string (64 chars)
+  if (!/^[a-f0-9]{64}$/.test(password)) return res.status(400).json({ error: '密码格式错误' });
   try {
     const hash = bcrypt.hashSync(password, 10);
-    const stmt = db.prepare('INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)');
-    stmt.run(username, hash, role, name || username);
+    db.prepare('INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)').run(username, hash, role, name || username);
     res.json({ success: true, message: '注册成功' });
   } catch (e) {
     if (e.message.includes('UNIQUE')) return res.status(400).json({ error: '用户名已存在' });
@@ -103,13 +110,18 @@ app.post('/api/register', (req, res) => {
   }
 });
 
+// Login: frontend sends sha256(password), bcrypt.compareSync verifies against stored hash.
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user || !bcrypt.compareSync(password, user.password)) {
     return res.status(401).json({ error: '用户名或密码错误' });
   }
-  const token = jwt.sign({ id: user.id, username: user.username, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign(
+    { id: user.id, username: user.username, role: user.role, name: user.name },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
   res.json({ token, user: { id: user.id, username: user.username, role: user.role, name: user.name } });
 });
 
@@ -121,11 +133,7 @@ app.get('/api/hotels', auth, (req, res) => {
   } else {
     hotels = db.prepare(`SELECT h.*, u.name as merchant_name FROM hotels h JOIN users u ON h.merchant_id = u.id WHERE h.merchant_id = ? ORDER BY h.updated_at DESC`).all(req.user.id);
   }
-  // Attach room types
-  hotels = hotels.map(h => ({
-    ...h,
-    room_types: db.prepare('SELECT * FROM room_types WHERE hotel_id = ?').all(h.id)
-  }));
+  hotels = hotels.map(h => ({ ...h, room_types: db.prepare('SELECT * FROM room_types WHERE hotel_id = ?').all(h.id) }));
   res.json(hotels);
 });
 
@@ -140,16 +148,12 @@ app.get('/api/hotels/:id', auth, (req, res) => {
 app.post('/api/hotels', auth, requireRole('merchant'), (req, res) => {
   const { name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, room_types } = req.body;
   if (!name_cn || !address) return res.status(400).json({ error: '酒店名称和地址为必填项' });
-
-  const stmt = db.prepare(`INSERT INTO hotels (merchant_id, name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`);
-  const result = stmt.run(req.user.id, name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions);
+  const result = db.prepare(`INSERT INTO hotels (merchant_id, name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`).run(req.user.id, name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions);
   const hotelId = result.lastInsertRowid;
-
-  if (room_types && room_types.length > 0) {
-    const roomStmt = db.prepare(`INSERT INTO room_types (hotel_id, name, price, discount_price, discount_desc, capacity, area, bed_type, facilities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    room_types.forEach(r => roomStmt.run(hotelId, r.name, r.price, r.discount_price, r.discount_desc, r.capacity, r.area, r.bed_type, r.facilities));
+  if (room_types?.length) {
+    const stmt = db.prepare(`INSERT INTO room_types (hotel_id, name, price, discount_price, discount_desc, capacity, area, bed_type, facilities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    room_types.forEach(r => stmt.run(hotelId, r.name, r.price, r.discount_price, r.discount_desc, r.capacity, r.area, r.bed_type, r.facilities));
   }
-
   res.json({ success: true, id: hotelId });
 });
 
@@ -158,20 +162,16 @@ app.put('/api/hotels/:id', auth, requireRole('merchant'), (req, res) => {
   if (!hotel) return res.status(404).json({ error: '酒店不存在' });
   if (hotel.merchant_id !== req.user.id) return res.status(403).json({ error: '无权修改' });
   if (hotel.status === 'approved') return res.status(400).json({ error: '已发布的酒店不能直接编辑，请先下线' });
-
   const { name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, room_types } = req.body;
   db.prepare(`UPDATE hotels SET name_cn=?, name_en=?, address=?, star_level=?, open_date=?, phone=?, description=?, facilities=?, nearby_attractions=?, status='draft', updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, req.params.id);
-
   db.prepare('DELETE FROM room_types WHERE hotel_id = ?').run(req.params.id);
-  if (room_types && room_types.length > 0) {
-    const roomStmt = db.prepare(`INSERT INTO room_types (hotel_id, name, price, discount_price, discount_desc, capacity, area, bed_type, facilities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    room_types.forEach(r => roomStmt.run(req.params.id, r.name, r.price, r.discount_price, r.discount_desc, r.capacity, r.area, r.bed_type, r.facilities));
+  if (room_types?.length) {
+    const stmt = db.prepare(`INSERT INTO room_types (hotel_id, name, price, discount_price, discount_desc, capacity, area, bed_type, facilities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    room_types.forEach(r => stmt.run(req.params.id, r.name, r.price, r.discount_price, r.discount_desc, r.capacity, r.area, r.bed_type, r.facilities));
   }
-
   res.json({ success: true });
 });
 
-// Submit for review
 app.post('/api/hotels/:id/submit', auth, requireRole('merchant'), (req, res) => {
   const hotel = db.prepare('SELECT * FROM hotels WHERE id = ?').get(req.params.id);
   if (!hotel) return res.status(404).json({ error: '酒店不存在' });
