@@ -95,9 +95,9 @@ export default function HotelDetailDrawer({ hotel, user, onClose, onAction }) {
 
         <div className="drawer-footer">
           <button className="btn btn-secondary" onClick={onClose}>关闭</button>
-          {user.role === 'merchant' && ['draft', 'rejected'].includes(hotel.status) && (
+          {user.role === 'merchant' && ['draft', 'rejected', 'offline'].includes(hotel.status) && (
             <button className="btn btn-primary" onClick={() => onAction(submitHotel, hotel.id)}>
-              {hotel.status === 'rejected' ? '重新提交' : '提交审核'}
+              {hotel.status === 'rejected' ? '重新提交' : hotel.status === 'offline' ? '修改后提交审核' : '提交审核'}
             </button>
           )}
           {user.role === 'admin' && hotel.status === 'pending' && (

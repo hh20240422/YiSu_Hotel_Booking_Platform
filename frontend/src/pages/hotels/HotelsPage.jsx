@@ -112,7 +112,7 @@ export default function HotelsPage() {
                         <td>
                           <div className="actions-cell">
                             <button className="btn btn-ghost btn-sm" onClick={() => setViewHotel(h)}>查看</button>
-                            {user?.role === 'merchant' && ['draft', 'rejected'].includes(h.status) && (
+                            {user?.role === 'merchant' && ['draft', 'rejected', 'offline'].includes(h.status) && (
                               <button className="btn btn-secondary btn-sm" onClick={() => openEdit(h)}>编辑</button>
                             )}
                             {/* Inline admin quick actions */}

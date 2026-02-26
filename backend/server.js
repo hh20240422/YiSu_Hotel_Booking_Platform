@@ -162,6 +162,7 @@ app.put('/api/hotels/:id', auth, requireRole('merchant'), (req, res) => {
   if (!hotel) return res.status(404).json({ error: '酒店不存在' });
   if (hotel.merchant_id !== req.user.id) return res.status(403).json({ error: '无权修改' });
   if (hotel.status === 'approved') return res.status(400).json({ error: '已发布的酒店不能直接编辑，请先下线' });
+  if (hotel.status === 'pending') return res.status(400).json({ error: '审核中的酒店不能编辑，请等待审核结果' });
   const { name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, room_types } = req.body;
   db.prepare(`UPDATE hotels SET name_cn=?, name_en=?, address=?, star_level=?, open_date=?, phone=?, description=?, facilities=?, nearby_attractions=?, status='draft', updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(name_cn, name_en, address, star_level, open_date, phone, description, facilities, nearby_attractions, req.params.id);
   db.prepare('DELETE FROM room_types WHERE hotel_id = ?').run(req.params.id);
@@ -200,106 +201,6 @@ app.post('/api/admin/hotels/:id/offline', auth, requireRole('admin'), (req, res)
 app.post('/api/admin/hotels/:id/online', auth, requireRole('admin'), (req, res) => {
   db.prepare(`UPDATE hotels SET status='approved', updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(req.params.id);
   res.json({ success: true });
-});
-
-// ==================== C端公开API ====================
-
-// 获取已发布的酒店列表（公开）
-app.get('/api/c/hotels', (req, res) => {
-  try {
-    const { location, keyword, star, minPrice, maxPrice } = req.query;
-    
-    let sql = `SELECT h.*, u.name as merchant_name FROM hotels h JOIN users u ON h.merchant_id = u.id WHERE h.status = 'approved'`;
-    const params = [];
-
-    if (location) {
-      sql += ` AND h.address LIKE ?`;
-      params.push(`%${location}%`);
-    }
-
-    if (keyword) {
-      sql += ` AND (h.name_cn LIKE ? OR h.name_en LIKE ? OR h.description LIKE ?)`;
-      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
-    }
-
-    if (star) {
-      sql += ` AND h.star_level = ?`;
-      params.push(star);
-    }
-
-    sql += ` ORDER BY h.updated_at DESC`;
-
-    let hotels = db.prepare(sql).all(...params);
-
-    // 为每个酒店添加房型
-    hotels = hotels.map(h => ({
-      ...h,
-      room_types: db.prepare('SELECT * FROM room_types WHERE hotel_id = ? ORDER BY COALESCE(discount_price, price) ASC').all(h.id)
-    }));
-
-    // 价格筛选（需要在获取房型后进行）
-    if (minPrice || maxPrice) {
-      hotels = hotels.filter(h => {
-        const minRoomPrice = Math.min(...h.room_types.map(r => r.discount_price || r.price));
-        if (minPrice && minRoomPrice < Number(minPrice)) return false;
-        if (maxPrice && minRoomPrice > Number(maxPrice)) return false;
-        return true;
-      });
-    }
-
-    res.json(hotels);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 获取酒店详情（公开）
-app.get('/api/c/hotels/:id', (req, res) => {
-  try {
-    const hotel = db.prepare(`
-      SELECT h.*, u.name as merchant_name 
-      FROM hotels h 
-      JOIN users u ON h.merchant_id = u.id 
-      WHERE h.id = ? AND h.status = 'approved'
-    `).get(req.params.id);
-
-    if (!hotel) {
-      return res.status(404).json({ error: '酒店不存在' });
-    }
-
-    const roomTypes = db.prepare(`
-      SELECT * FROM room_types 
-      WHERE hotel_id = ?
-      ORDER BY COALESCE(discount_price, price) ASC
-    `).all(req.params.id);
-
-    res.json({
-      ...hotel,
-      room_types: roomTypes
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 搜索建议（公开）
-app.get('/api/c/search-suggestions', (req, res) => {
-  try {
-    const { keyword } = req.query;
-    if (!keyword || keyword.length < 2) return res.json([]);
-
-    const hotels = db.prepare(`
-      SELECT id, name_cn, name_en, address 
-      FROM hotels 
-      WHERE status = 'approved' 
-        AND (name_cn LIKE ? OR name_en LIKE ? OR address LIKE ?)
-      LIMIT 5
-    `).all(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
-
-    res.json(hotels);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
 app.listen(PORT, () => console.log(`🏨 Hotel Admin API running on http://localhost:${PORT}`));
