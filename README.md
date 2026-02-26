@@ -54,6 +54,7 @@ hotel-v2/
             └── global.css         # 全局样式变量和组件样式
 ```
 
+## 演示视频：https://www.bilibili.com/video/BV1voAzztEju/
 ---
 
 ## 快速启动
