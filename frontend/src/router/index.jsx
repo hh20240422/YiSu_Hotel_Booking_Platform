@@ -6,20 +6,12 @@ import RegisterPage from '../pages/auth/RegisterPage'
 import DashboardPage from '../pages/DashboardPage'
 import HotelsPage from '../pages/hotels/HotelsPage'
 
-// Guard: redirect to /login if not authenticated
+// 只保留登录后的路由守卫，登录/注册页不需要包装
 function RequireAuth({ children }) {
   const user = useSelector(state => state.auth.user)
   return user ? children : <Navigate to="/login" replace />
 }
 
-// Guard: redirect to /dashboard if already logged in
-function RequireGuest({ children }) {
-  const user = useSelector(state => state.auth.user)
-  return user ? <Navigate to="/dashboard" replace /> : children
-}
-
-// Wrapper to use hooks inside createBrowserRouter
-import React from 'react'
 function ProtectedLayout() {
   return (
     <RequireAuth>
@@ -27,21 +19,15 @@ function ProtectedLayout() {
     </RequireAuth>
   )
 }
-function GuestLogin() {
-  return <RequireGuest><LoginPage /></RequireGuest>
-}
-function GuestRegister() {
-  return <RequireGuest><RegisterPage /></RequireGuest>
-}
 
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <GuestLogin />,
+    element: <LoginPage />,      // 直接挂载，不包任何 wrapper
   },
   {
     path: '/register',
-    element: <GuestRegister />,
+    element: <RegisterPage />,   // 直接挂载，不包任何 wrapper
   },
   {
     path: '/',

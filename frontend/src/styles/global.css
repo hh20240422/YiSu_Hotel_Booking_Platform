@@ -209,3 +209,20 @@ textarea { resize: vertical; min-height: 80px; }
 .detail-label { font-size: 11px; color: var(--ink-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
 .detail-value { font-size: 14px; color: var(--ink); }
 .reject-reason-box { background: var(--red-light); border: 1px solid rgba(192,57,43,0.2); border-radius: var(--radius); padding: 10px 14px; font-size: 12px; color: var(--red); margin-bottom: 16px; }
+
+/* ── Auth loading overlay & error slot ── */
+.auth-loading-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(255, 253, 248, 0.75);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 20px;
+}
+.auth-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border-dark);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
